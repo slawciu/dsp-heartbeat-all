@@ -53,7 +53,7 @@ module.exports = {
     var blogInfo = {};
     var lastUpdate = new Date();
     
-    _.first(this._blogFeeds, 10).forEach(function(feed){
+    _.first(this._blogFeeds, 1000).forEach(function(feed){
       var feedParser = new FeedParser();
       var blog = request(feed)
       blog.setMaxListeners(400);
@@ -97,7 +97,7 @@ module.exports = {
             }
             console.log(linkToBlog+ ': '+ blogTitle);
           }
-          blogInfo[linkToBlog].posts.push({link: item.link, publishDate: item.date, categories: item.categories});
+          blogInfo[linkToBlog].posts.push({link: item.link, publishDate: item.date, categories: item.categories, title: item.title});
         }
       });
     })
