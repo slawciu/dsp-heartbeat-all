@@ -9,39 +9,6 @@ const request = require('request')
 const _ = require('underscore')
 
 module.exports = {
-  _getLastPostAddress: function(entries) {
-    return '';
-  },
-
-  _getPublishedDate: function(entries) {
-    return new Date();
-  },
-
-  _resolveWhichWeek: function(date) {
-    return '';
-  },
-
-  _feedUpdated: function (data) {
-		var blogData = null;
-		if (data.responseData === null) {
-			blogData = new BlogUpdate('','','','',[],'',0,'');
-		}
-		else {
-			var dspEntries = data.responseData.feed.entries.filter(this._containsDajsiepoznac);
-			blogData = new BlogUpdate(
-				data.responseData.feed.title,
-				this._getLastPostAddress(data.responseData.feed.entries),
-				data.responseData.feed.link,
-				data.responseData.feed.feedUrl,
-				data.responseData.feed.entries,
-				this._getPublishedDate(data.responseData.feed.entries),
-				dspEntries.length,
-				this._resolveWhichWeek(this._getPublishedDate(data.responseData.feed.entries)));
-		}
-		
-			blogDetails: this.state.blogDetails.concat([blogData])
-	},
-
   app: function () {
     const signalR = SignalRJS();
     const app = express()
@@ -53,7 +20,7 @@ module.exports = {
     var blogInfo = {};
     var lastUpdate = new Date();
     
-    _.first(this._blogFeeds, 1000).forEach(function(feed){
+    _.first(this._blogFeeds, 1).forEach(function(feed){
       var feedParser = new FeedParser();
       var blog = request(feed)
       blog.setMaxListeners(400);
@@ -134,6 +101,7 @@ module.exports = {
     return app
   },
   _blogFeeds: [
+      'http://testowy-blog-like.blogspot.com/feeds/posts/default',
 			'http://0x00antdot.blogspot.com/feeds/posts/default',
 			'http://adambac.com/feed.xml',
 			'http://addictedtocreating.pl/feed/',
