@@ -2,10 +2,6 @@ import React from 'react'
 import _ from 'underscore'
 import { ListGroupItem, Grid, Col, Button } from 'react-bootstrap';
 export default class BlogItem extends React.Component {
-    _getLastPostDate() {
-        return _.last(_.sortBy(this.props.blog.details.posts, 'publishDate')).publishDate;
-    }
-
     _getTitle(posts) {
         return _.last(_.sortBy(this.props.blog.details.posts, 'publishDate')).title;
     }
@@ -29,10 +25,10 @@ export default class BlogItem extends React.Component {
     render (){
         return (<ListGroupItem bsStyle='success'>
                     <Grid>
-                        <Col xs={8} md={8}>
+                        <Col xs={8} md={10}>
                             <p><b>Blog Title: {this.props.blog.details.title}</b></p>
                             <div>Posts: {this.props.blog.details.posts.length} <b>#dajsiepoznac: { this._getDajSiePoznacItems() }</b></div>
-                            <div>Last Post Date: { this._getLastPostDate() }</div>
+                            <div>Last Post Date: {this.props.blog.details.lastPostDate}</div>
                             <div>Last Post Title: {this._getTitle(this.props.blog.details.posts)}</div>
                         </Col>	
                         <Col xs={1} md={1}>

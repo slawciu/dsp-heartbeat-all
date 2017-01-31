@@ -5,6 +5,7 @@ import $ from 'jquery'
 import _ from 'underscore'
 import BlogItem from './blogItem.js'
 import { ListGroup, ProgressBar, Label, Grid, Col } from 'react-bootstrap';
+import { LocalDateTime, LocalDate, Period } from 'js-joda'
 
 export default class App extends React.Component {
   constructor(props) {
@@ -44,7 +45,33 @@ export default class App extends React.Component {
   }
 
   render () {
-    var blogs = this.state.blogs.map(function(blog){
+    var blogsByPublishDate = this.state.blogs.sort(function(flap, flip){
+      var flipDateError = false;
+		  var flapDateError = false;
+      try {
+			  var flipDate = LocalDateTime.parse(flip.details.lastPostDate.replace('Z',''));
+      } catch (parseError) {
+        flipDateError = true;
+      }
+      
+      try {
+        var flapDate = LocalDateTime.parse(flap.details.lastPostDate.replace('Z',''));
+      } catch (parseError) {
+        flapDateError = true;
+      }
+      
+      if (flipDateError && flapDateError) {
+        return 0;
+      } else if (flipDateError && !flapDateError) {
+        return -1;
+      } else if (!flipDateError && flapDateError) {
+        return 1;
+      } else {
+        console.log(flipDate + ' ' + flipDate.compareTo(flapDate) + ' ' + flapDate);
+        return flipDate.compareTo(flapDate);	
+      }
+    })
+    var blogs = blogsByPublishDate.map(function(blog){
       return <BlogItem key={blog.link} keyForButton={blog.link} blog={blog} />
     })
     return (

@@ -93,9 +93,13 @@ module.exports = {
             blogInfo[linkToBlog]={
               title: blogTitle,
               feedUrl: feedUrl,
-              posts: []
+              posts: [],
+              lastPostDate: new Date(0)
             }
             console.log(linkToBlog+ ': '+ blogTitle);
+          }
+          if (item.pubDate > blogInfo[linkToBlog].lastPostDate) {
+            blogInfo[linkToBlog].lastPostDate = item.pubDate;
           }
           blogInfo[linkToBlog].posts.push({link: item.link, publishDate: item.date, categories: item.categories, title: item.title});
         }
