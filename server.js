@@ -97,7 +97,7 @@ module.exports = {
             }
             console.log(linkToBlog+ ': '+ blogTitle);
           }
-          blogInfo[linkToBlog].posts.push(item.link);
+          blogInfo[linkToBlog].posts.push({link: item.link, publishDate: item.date, categories: item.categories});
         }
       });
     })
@@ -178,7 +178,6 @@ module.exports = {
 			'http://dyzur.blogspot.com/feeds/posts/default',
 			'http://epascales.blogspot.com/feeds/posts/default',
 			'http://feeds.feedburner.com/PassionateProgram',
-			'http://filipcinik.azurewebsites.net/index.php/feed/',
 			'http://findfriendsswift.blogspot.com/feeds/posts/default',
 			'http://fogielpiotr.blogspot.com/feeds/posts/default',
 			'http://foreverframe.pl/feed/',

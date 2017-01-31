@@ -2,6 +2,8 @@ import React from 'react'
 import 'expose-loader?jQuery!jquery';
 import signalR from '../../node_modules/signalr/jquery.signalR.js';
 import $ from 'jquery'
+import _ from 'underscore'
+import BlogItem from './blogItem.js'
 
 export default class App extends React.Component {
   constructor(props) {
@@ -14,7 +16,6 @@ export default class App extends React.Component {
 
   componentDidMount() {
     var connection = $.hubConnection();
-    connection.logging = true;
     var dspHub = connection.createHubProxy('dspHub');
     this.dspHub = dspHub;
     dspHub.on('updateBlogPosts', function(blogs) {
@@ -33,7 +34,6 @@ export default class App extends React.Component {
 
     connection.start()
         .done(function(){ 
-          console.log('Now connected, connection ID=' + connection.id); 
           this.dspHub.invoke('blogPostReceived');
           setInterval(function(){
             this.dspHub.invoke('broadcast');
@@ -44,7 +44,8 @@ export default class App extends React.Component {
 
   render () {
     var blogs = this.state.blogs.map(function(blog){
-      return (<li key={blog.link}>{blog.details.title} <a href={blog.details.feedUrl}>RSS</a> <a href={blog.link}>Ostatni post</a></li>)
+      return <BlogItem key={blog.link} blog={blog} />
+      
     })
     return (
       <div>
