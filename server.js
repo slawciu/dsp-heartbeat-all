@@ -53,7 +53,7 @@ module.exports = {
     var blogInfo = {};
     var lastUpdate = new Date();
     
-    _.first(this._blogFeeds, 10).forEach(function(feed){
+    _.first(this._blogFeeds, 1000).forEach(function(feed){
       var feedParser = new FeedParser();
       var blog = request(feed)
       blog.setMaxListeners(400);
@@ -84,13 +84,17 @@ module.exports = {
         while (item = stream.read()) {
           var linkToBlog = item.meta.link;
           var blogTitle = item.meta.title;
-
+          var feedUrl = item.meta.xmlUrl;
           if (linkToBlog === "/") {
             linkToBlog = "http://swistak35.com/";
           }
 
           if (blogInfo[linkToBlog] === undefined) {
-            blogInfo[linkToBlog]={title: blogTitle, posts: []}
+            blogInfo[linkToBlog]={
+              title: blogTitle,
+              feedUrl: feedUrl,
+              posts: []
+            }
             console.log(linkToBlog+ ': '+ blogTitle);
           }
           blogInfo[linkToBlog].posts.push(item.link);
@@ -99,7 +103,7 @@ module.exports = {
     })
 
     signalR.hub('dspHub', {
-      broadcast: function(message) {
+      broadcast: function() {
         var updateDiff = new Date() - lastUpdate;
         lastUpdate = new Date();
         console.log(updateDiff);
@@ -109,9 +113,8 @@ module.exports = {
           this.clients.all.invoke('idle').withArgs(['idle']);
         }
       },
-      blogPostReceived: function(blogPost) {
-        this.clients.all.invoke('updateBlogPosts').withArgs([blogPosts]);
-        console.log('blogPostReceived: ' + blogPost.time);
+      blogPostReceived: function() {
+        this.clients.all.invoke('updateBlogPosts').withArgs([blogInfo]);
       }
     });
 
