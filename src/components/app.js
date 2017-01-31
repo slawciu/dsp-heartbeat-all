@@ -4,6 +4,7 @@ import signalR from '../../node_modules/signalr/jquery.signalR.js';
 import $ from 'jquery'
 import _ from 'underscore'
 import BlogItem from './blogItem.js'
+import { ListGroup, ProgressBar, Label } from 'react-bootstrap';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -50,9 +51,9 @@ export default class App extends React.Component {
     return (
       <div>
         #dspHeartbeat
-        <ul>
+        <ListGroup>
           {blogs}
-        </ul>
+        </ListGroup>
       </div>
     )
   }

@@ -28,6 +28,7 @@
     "jquery": "^3.1.1",
     "ms-signalr-client": "^2.2.5",
     "react": "^0.14.8",
+    "react-bootstrap": "^0.30.7",
     "react-dom": "^0.14.8",
     "request": "^2.79.0",
     "signalr": "^2.2.1",
