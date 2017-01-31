@@ -1,30 +1,122 @@
 const path = require('path')
 const express = require('express')
-const SignalRJS = require('signalrjs')
-
 const $ = require('jquery')
+const window = $.window
+const signalRClient = require('signalr-client')
+const SignalRJS = require('signalrjs')
+const FeedParser = require('feedparser')
+const request = require('request')
+const _ = require('underscore')
 
 module.exports = {
+  _getLastPostAddress: function(entries) {
+    return '';
+  },
+
+  _getPublishedDate: function(entries) {
+    return new Date();
+  },
+
+  _resolveWhichWeek: function(date) {
+    return '';
+  },
+
+  _feedUpdated: function (data) {
+		var blogData = null;
+		if (data.responseData === null) {
+			blogData = new BlogUpdate('','','','',[],'',0,'');
+		}
+		else {
+			var dspEntries = data.responseData.feed.entries.filter(this._containsDajsiepoznac);
+			blogData = new BlogUpdate(
+				data.responseData.feed.title,
+				this._getLastPostAddress(data.responseData.feed.entries),
+				data.responseData.feed.link,
+				data.responseData.feed.feedUrl,
+				data.responseData.feed.entries,
+				this._getPublishedDate(data.responseData.feed.entries),
+				dspEntries.length,
+				this._resolveWhichWeek(this._getPublishedDate(data.responseData.feed.entries)));
+		}
+		
+			blogDetails: this.state.blogDetails.concat([blogData])
+	},
+
   app: function () {
     const signalR = SignalRJS();
     const app = express()
     const indexPath = path.join(__dirname, 'index.html')
     const publicPath = express.static(path.join(__dirname, 'public'))
+    var server = this;
+
+    var blogPosts = [];
+    var blogInfo = {};
+    var lastUpdate = new Date();
+    
+    _.first(this._blogFeeds, 10).forEach(function(feed){
+      var feedParser = new FeedParser();
+      var blog = request(feed)
+      blog.setMaxListeners(400);
+      // Some feeds do not respond without user-agent and accept headers.
+      blog.setHeader('user-agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36');
+      blog.setHeader('accept', 'text/html,application/xhtml+xml');
+      blog.on('response', function (res) {
+        var stream = this; // `this` is `req`, which is a stream
+
+        if (res.statusCode !== 200) {
+          console.warn(this.href);
+        }
+        else {
+          stream.pipe(feedParser);
+        }
+      });
+
+      feedParser.on('error', function (error) {
+        console.log(error)
+      });               
+
+      feedParser.on('readable', function () {
+        // This is where the action is!
+        var stream = this; // `this` is `feedparser`, which is a stream
+        var meta = this.meta; // **NOTE** the "meta" is always available in the context of the feedparser instance
+        var item;
+
+        while (item = stream.read()) {
+          var linkToBlog = item.meta.link;
+          var blogTitle = item.meta.title;
+
+          if (linkToBlog === "/") {
+            linkToBlog = "http://swistak35.com/";
+          }
+
+          if (blogInfo[linkToBlog] === undefined) {
+            blogInfo[linkToBlog]={title: blogTitle, posts: []}
+            console.log(linkToBlog+ ': '+ blogTitle);
+          }
+          blogInfo[linkToBlog].posts.push(item.link);
+        }
+      });
+    })
 
     signalR.hub('dspHub', {
+      broadcast: function(message) {
+        var updateDiff = new Date() - lastUpdate;
+        lastUpdate = new Date();
+        console.log(updateDiff);
+        if (updateDiff > 9999) {
+          this.clients.all.invoke('updateBlogPosts').withArgs([blogInfo]);
+        } else {
+          this.clients.all.invoke('idle').withArgs(['idle']);
+        }
+      },
       blogPostReceived: function(blogPost) {
-        this.clients.all.invoke('updateBlogPosts').withArgs([blogPost]);
-        console.log('blogPostReceived: ' + blogPost);
+        this.clients.all.invoke('updateBlogPosts').withArgs([blogPosts]);
+        console.log('blogPostReceived: ' + blogPost.time);
       }
     });
 
     signalR.on('CONNECTED',function(){
         console.log('connected');
-        setInterval(function () {
-            console.log('blogPostReceived');
-            var dspHub = $.hubConnection().createHubProxy('dspHub');
-            dspHub.invoke('blogPostReceived').withArgs([{time: new Date()}]);
-        }.bind(this),1000)
     });
 
     app.use(signalR.createListener())
@@ -33,5 +125,224 @@ module.exports = {
     app.get('/', function (_, res) { res.sendFile(indexPath) })
 
     return app
-  }
+  },
+  _blogFeeds: [
+			'http://0x00antdot.blogspot.com/feeds/posts/default',
+			'http://adambac.com/feed.xml',
+			'http://addictedtocreating.pl/feed/',
+			'http://aragornziel.blogspot.com/feeds/posts/default',
+			'http://arekbal.blogspot.com/feeds/posts/default',
+			'http://bartmalanczuk.github.io/feed.xml',
+			'http://blog.buczaj.com/feed/',
+			'http://blog.chyla.org/rss',
+			'http://blog.creyn.pl/feed/',
+			'http://blog.degustudios.com/index.php/feed/',
+			'http://blog.forigi.com/feed/',
+			'http://blog.gonek.net/feed/',
+			'http://blog.jhossa.net/feed/',
+			'http://blog.kars7e.io/feed.xml',
+			'http://blog.kokosa.net/syndication.axd',
+			'http://blog.kurpio.com/feed/',
+			'http://blog.lantkowiak.pl/index.php/feed/',
+			'http://blog.leszczynski.it/feed/',
+			'http://blog.rakaz.pl/feed/',
+			'http://blog.roobina.pl/?rss=516047c1-683c-4521-8ffd-143a0a546c85',
+			'http://blog.stanaszek.pl/feed/',
+			'http://blog.waldemarbira.pl/feed/',
+			'http://blog.yellowmoleproductions.pl/feed/',
+			'http://bnowakowski.pl/en/feed/',
+			'http://brozanski.net/index.php/feed/',
+			'http://cezary.mcwronka.com.hostingasp.pl/feed/',
+			'http://charyzmatyczny-programista.blogspot.com/feeds/posts/default',
+			'http://chmielowski.net/feed/',
+			'http://cleancodestruggle.blogspot.com/feeds/posts/default',
+			'http://coder-log.blogspot.com/feeds/posts/default',
+			'http://codestorm.pl/feed/',
+			'http://codinghabit.pl/feed/',
+			'http://cojakodze.pl/feed/',
+			'http://commitandrun.pl/feed.xml',
+			'http://crynkowski.pl/feed/',
+			'http://czekanski.info/feed/',
+			'http://czesio-w-it.2ap.pl/feed/',
+			'http://damiankedzior.com/feed/',
+			'http://dev.mensfeld.pl/feed/',
+			'http://devbochenek.pl/feed/',
+			'http://devfirststeps.blog.pl/feed/',
+			'http://donpiekarz.pl/feed.xml',
+			'http://doriansobacki.pl/feed/',
+			'http://dsp.katafrakt.me/feed.xml',
+			'http://dspprojekt.blogspot.com/feeds/posts/default',
+			'http://dyzur.blogspot.com/feeds/posts/default',
+			'http://epascales.blogspot.com/feeds/posts/default',
+			'http://feeds.feedburner.com/PassionateProgram',
+			'http://filipcinik.azurewebsites.net/index.php/feed/',
+			'http://findfriendsswift.blogspot.com/feeds/posts/default',
+			'http://fogielpiotr.blogspot.com/feeds/posts/default',
+			'http://foreverframe.pl/feed/',
+			'http://ggajos.com/rss.xml',
+			'http://halibuti.blogspot.com/feeds/posts/default',
+			'http://hryniewski.net/syndication.axd',
+			'http://immora.azurewebsites.net/feed/',
+			'http://improsoft.blogspot.com/feeds/posts/default',
+			'http://incodable.blogspot.com/feeds/posts/default',
+			'http://ionicdsp.eu/?feed=rss2',
+			'http://itcraftsman.pl/feed/',
+			'http://it-michal-sitko.blogspot.com/feeds/posts/default',
+			'http://jakubfalenczyk.com/feed/',
+			'http://jakubskoczen.pl/feed/',
+			'http://jaroslawstadnicki.pl/feed/',
+			'http://jsdn.pl/feed/',
+			'http://justmypassions.pl/?feed=rss2',
+			'http://kduszynski.pl/feed/',
+			'http://kkustra.blogspot.com/feeds/posts/default',
+			'http://kodikable.pl/rss/',
+			'http://koscielniak.me/post/index.xml',
+			'http://koscielski.ninja/feed/',
+			'http://kotprogramistyczny.pl/feed/',
+			'http://kreskadev.azurewebsites.net/rss/',
+			'http://krystianbrozek.pl/feed/',
+			'http://krzyskowk.postach.io/feed.xml',
+			'http://krzysztofabramowicz.com/feed/',
+			'http://krzysztofzawistowski.azurewebsites.net/?feed=rss2',
+			'http://kubasz.esy.es/feed/',
+			'http://langusblog.pl/index.php/feed/',
+			'http://lazybitch.com/feed',
+			'http://lion.net.pl/blog/feed.xml',
+			'http://liveshare.azurewebsites.net/feed/',
+			'http://localwire.pl/feed/',
+			'http://macieklesiczka.github.io/rss.xml',
+			'http://maciektalaska.github.io/atom.xml',
+			'http://manisero.net/feed/',
+			'http://marcindrobik.pl/Home/Rss',
+			'http://marcinkowalczyk.pl/blog/feed/',
+			'http://marcinkruszynski.blogspot.com/feeds/posts/default',
+			'http://marcinszyszka.pl/feed/',
+			'http://mariuszbartosik.com/feed/',
+			'http://martanocon.com/?feed=rss2',
+			'http://mateorobiapke.blogspot.com/feeds/posts/default',
+			'http://matma.github.io/feed.xml',
+			'http://mbork.pl/?action=rss',
+			'http://mborowy.com/feed/',
+			'http://mcupial.pl/feed/',
+			'http://memforis.info/feed/',
+			'http://metodprojekt.blogspot.com/feeds/posts/default',
+			'http://michal.muskala.eu/feed.xml',
+			'http://michalgellert.blogspot.com/feeds/posts/default',
+			'http://michalogluszka.pl/feed/',
+			'http://mieczyk.vilya.pl/feed/',
+			'http://milena.mcwronka.com.hostingasp.pl/feed/',
+			'http://mmalczewski.pl/index.php/feed/',
+			'http://moje-zagwostki.blogspot.com/feeds/posts/default',
+			'http://msnowak.pl/feed/',
+			'http://mzieba.com/feed/',
+			'http://namiekko.pl/feed/',
+			'http://nicholaszyl.net/feed/',
+			'http://nowas.pl/feed/',
+			'http://oxbow.pl/feed/',
+			'http://parkowanko.blogspot.com/feeds/posts/default',
+			'http://paweldobrzanski.pl/feed',
+			'http://pawelrzepinski.azurewebsites.net/feed/',
+			'http://paweltymura.pl/feed/',
+			'http://piatkosia.k4be.pl/wordpress/?feed=rss2',
+			'http://piotrgankiewicz.com/feed/',
+			'http://piotr-wandycz.pl/feed/',
+			'http://plotzwi.com/feed/',
+			'http://podziemiazamkul.blogspot.com/feeds/posts/default',
+			'http://polak.azurewebsites.net/rss/',
+			'http://programistka.net/feed/',
+			'http://programuje.net/feed/',
+			'http://przemek.ciacka.com/feed.xml',
+			'http://pumiko.pl/feed.xml',
+			'http://resumees.net/devblog/feed/',
+			'http://rutkowski.in/feed/',
+			'http://rzeczybezinternetu.blogspot.com/feeds/posts/default',
+			'http://sebcza.pl/feed/',
+			'http://spine.angrybits.pl/?feed=rss2',
+			'http://sprobujzmiany.blogspot.com/feeds/posts/default',
+			'http://student.agh.edu.pl/~kefas/?feed=rss2',
+			'http://sweetprogramming.com/feed/',
+			'http://swistak35.com/feed.xml',
+			'http://szumiato.pl/feed/',
+			'http://takiarek.com/feed/',
+			'http://t-code.pl/atom.xml',
+			'http://terianil.blogspot.com/feeds/posts/default',
+			'http://tokenbattle.blogspot.com/feeds/posts/default',
+			'http://tomasz.dudziak.eu/feed/',
+			'http://tomaszjarzynski.pl/feed/',
+			'http://tomaszkacmajor.pl/index.php/feed/',
+			'http://tomaszkorecki.com/feed/',
+			'http://tomaszsokol.pl/feed/',
+			'http://toomanyitprojects.azurewebsites.net/feed/',
+			'http://tsovek.blogspot.com/feeds/posts/default',
+			'http://twitop.azurewebsites.net/index.php/feed/',
+			'http://wezewkodzie.blogspot.com/feeds/posts/default',
+			'http://whitebear.com.pl/feed/',
+			'http://www.andrzejdubaj.com/feed/',
+			'http://www.arturnet.pl/feed/',
+			'http://www.bodolsog.pl/devblog/feed/',
+			'http://www.dedlajn.pl/feeds/posts/default',
+			'http://www.devanarch.com/feed/',
+			'http://www.diwebsity.com/feed/',
+			'http://www.dobreprogramy.pl/djfoxer,Rss',
+			'http://www.karolpysklo.pl/?feed=rss2',
+			'http://www.marcinwojdak.pl/?feed=rss2',
+			'http://www.md-techblog.net.pl/feed/',
+			'http://www.mguzdek.pl/feed/',
+			'http://www.mikolajdemkow.pl/feed/',
+			'http://www.namekdev.net/feed/',
+			'http://www.owsiak.org/?feed=rss2',
+			'http://www.przemyslawowsianik.net/feed/',
+			'http://www.pyrzyk.net/feed/',
+			'http://www.sebastiangruchacz.pl/feed/',
+			'http://www.select-iot.pl/feed/',
+			'http://www.sgierlowski.pl/posts/rssfeed',
+			'http://www.straightouttacode.net/rss/',
+			'http://www.wearesicc.com/feed/',
+			'http://www.webatelier.io/blog.xml',
+			'http://www.winiar.pl/blog/feed/',
+			'http://zszywacz.azurewebsites.net/feed/',
+			'http://zelazowy.github.io/feed.xml',
+			'https://admincenterblog.wordpress.com/feed/',
+			'https://alpac4blog.wordpress.com/feed/',
+			'https://barloblog.wordpress.com/feed/',
+			'https://beabest.wordpress.com/feed/',
+			'https://bizon7nt.github.io/feed.xml',
+			'https://blog.scooletz.com/feed/',
+			'https://branegblog.wordpress.com/feed/',
+			'https://brinf.wordpress.com/feed/',
+			'https://bzaremba.wordpress.com/feed/',
+			'https://chrisseroka.wordpress.com/feed/',
+			'https://citygame2016.wordpress.com/feed/',
+			'https://damianwojcikblog.wordpress.com/feed/',
+			'https://devblog.dymel.pl/feed/',
+			'https://devprzemm.wordpress.com/feed/',
+			'https://dotnetcoder.wordpress.com/feed/',
+			'https://duszekmestre.wordpress.com/feed/',
+			'https://dziewczynazpytonem.wordpress.com/feed/',
+			'https://fadwick.wordpress.com/feed/',
+			'https://gettoknowthebob.wordpress.com/feed/',
+			'https://github.com/piotrkowalczuk/charon/commits/master.atom',
+			'https://ismenax.wordpress.com/feed/',
+			'https://jendaapkatygodniowo.wordpress.com/feed/',
+			'https://jporwol.wordpress.com/feed/',
+			'https://kamilhawdziejuk.wordpress.com/feed/',
+			'https://koniecznuda.wordpress.com/feed/',
+			'https://krzysztofmorcinek.wordpress.com/feed/',
+			'https://netgwg.wordpress.com/feed/',
+			'https://odzeradokoderablog.wordpress.com/feed/',
+			'https://onehundredoneblog.wordpress.com/feed/',
+			'https://ourtownapp.wordpress.com/feed/',
+			'https://pablitoblogblog.wordpress.com/feed/',
+			'https://slaviannblog.wordpress.com/feed/',
+			'https://stitzdev.wordpress.com/feed/',
+			'https://tomaszprasolek.wordpress.com/feed/',
+			'https://tomoitblog.wordpress.com/feed/',
+			'https://uwagababaprogramuje.wordpress.com/feed/',
+			'https://werpuc.wordpress.com/feed/',
+			'https://zerojedynka.wordpress.com/feed/',
+			'http://novakov.github.io/feed.xml',
+			'http://adam.skobo.pl/?feed=rss2',
+			'http://www.code-addict.pl/feed',
+			'https://gotowalski.wordpress.com/feed/'
+        ]
 }

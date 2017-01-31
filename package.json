@@ -24,10 +24,16 @@
   "dependencies": {
     "expose-loader": "^0.7.1",
     "express": "^4.13.4",
+    "feedparser": "^2.1.0",
     "jquery": "^3.1.1",
+    "ms-signalr-client": "^2.2.5",
     "react": "^0.14.8",
     "react-dom": "^0.14.8",
-    "signalr": "^2.2.1"
+    "request": "^2.79.0",
+    "signalr": "^2.2.1",
+    "signalr-client": "^0.0.17",
+    "signalrjs": "^0.2.2",
+    "underscore": "^1.8.3"
   },
   "devDependencies": {
     "babel": "^6.5.2",

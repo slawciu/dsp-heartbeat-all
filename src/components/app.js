@@ -15,14 +15,20 @@ export default class App extends React.Component {
     connection.logging = true;
     var dspHub = connection.createHubProxy('dspHub');
     this.dspHub = dspHub;
-    dspHub.on('updateBlogPosts', function(blogPost) {
-        console.log(blogPost.time);
+    dspHub.on('updateBlogPosts', function(blogPosts) {
+        console.log(blogPosts);
     });
+
+    dspHub.on('broadcasted', function(args){
+      console.log('broadcast args: ' + args);
+    })
 
     connection.start()
         .done(function(){ 
           console.log('Now connected, connection ID=' + connection.id); 
-          this.dspHub.invoke('blogPostReceived',{time: new Date()});
+          setInterval(function(){
+            this.dspHub.invoke('broadcast','from client');
+          }.bind(this), 10000)
         }.bind(this))
         .fail(function(){ console.log('Could not connect'); });
       }
