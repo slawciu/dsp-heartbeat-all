@@ -8,25 +8,18 @@ const FeedParser = require('feedparser')
 const request = require('request')
 const _ = require('underscore')
 
-module.exports = {
-  app: function () {
-    const signalR = SignalRJS();
-    const app = express()
-    const indexPath = path.join(__dirname, 'index.html')
-    const publicPath = express.static(path.join(__dirname, 'public'))
-    var server = this;
 
-    var blogPosts = [];
-    var blogInfo = {};
-    var lastUpdate = new Date();
-    
-    _.first(this._blogFeeds, 1).forEach(function(feed){
+module.exports = {
+
+  _setupRssWatch: function(feed) {
+      var server = this;
       var feedParser = new FeedParser();
       var blog = request(feed)
       blog.setMaxListeners(400);
       // Some feeds do not respond without user-agent and accept headers.
       blog.setHeader('user-agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36');
       blog.setHeader('accept', 'text/html,application/xhtml+xml');
+      
       blog.on('response', function (res) {
         var stream = this; // `this` is `req`, which is a stream
 
@@ -56,8 +49,8 @@ module.exports = {
             linkToBlog = "http://swistak35.com/";
           }
 
-          if (blogInfo[linkToBlog] === undefined) {
-            blogInfo[linkToBlog]={
+          if (server.blogInfo[linkToBlog] === undefined) {
+            server.blogInfo[linkToBlog]={
               title: blogTitle,
               feedUrl: feedUrl,
               posts: [],
@@ -65,13 +58,29 @@ module.exports = {
             }
             console.log(linkToBlog+ ': '+ blogTitle);
           }
-          if (item.pubDate > blogInfo[linkToBlog].lastPostDate) {
-            blogInfo[linkToBlog].lastPostDate = item.pubDate;
+          if (item.pubDate > server.blogInfo[linkToBlog].lastPostDate) {
+            server.blogInfo[linkToBlog].lastPostDate = item.pubDate;
+            server.blogInfo[linkToBlog].posts.push({link: item.link, publishDate: item.date, categories: item.categories, title: item.title});
           }
-          blogInfo[linkToBlog].posts.push({link: item.link, publishDate: item.date, categories: item.categories, title: item.title});
         }
       });
-    })
+  },
+
+  app: function () {
+    const signalR = SignalRJS();
+    const app = express()
+    const indexPath = path.join(__dirname, 'index.html')
+    const publicPath = express.static(path.join(__dirname, 'public'))
+    var server = this;
+
+    var blogPosts = [];
+    this.blogInfo = {};
+    var lastUpdate = new Date();
+    
+    _.first(this._blogFeeds, 1).forEach(function(feed){
+      
+      setInterval(function(){this._setupRssWatch(feed)}.bind(this),3000);
+    }.bind(this))
 
     signalR.hub('dspHub', {
       broadcast: function() {
@@ -79,13 +88,13 @@ module.exports = {
         lastUpdate = new Date();
         console.log(updateDiff);
         if (updateDiff > 9999) {
-          this.clients.all.invoke('updateBlogPosts').withArgs([blogInfo]);
+          this.clients.all.invoke('updateBlogPosts').withArgs([server.blogInfo]);
         } else {
           this.clients.all.invoke('idle').withArgs(['idle']);
         }
       },
       blogPostReceived: function() {
-        this.clients.all.invoke('updateBlogPosts').withArgs([blogInfo]);
+        this.clients.all.invoke('updateBlogPosts').withArgs([server.blogInfo]);
       }
     });
 
