@@ -22,17 +22,20 @@ module.exports = {
       
       blog.on('response', function (res) {
         var stream = this; // `this` is `req`, which is a stream
-
-        if (res.statusCode !== 200) {
-          console.warn(this.href);
-        }
-        else {
-          stream.pipe(feedParser);
+        try {
+          if (res.statusCode !== 200) {
+            console.warn(this.href);
+          }
+          else {
+            stream.pipe(feedParser);
+          }  
+        } catch (error) {
+          console.error(error);
         }
       });
-
+      blog.end();
       feedParser.on('error', function (error) {
-        console.log(error)
+        console.error(error)
       });               
 
       feedParser.on('readable', function () {
@@ -64,6 +67,7 @@ module.exports = {
           }
         }
       });
+
   },
 
   app: function () {
@@ -77,17 +81,19 @@ module.exports = {
     this.blogInfo = {};
     var lastUpdate = new Date();
     
-    _.first(this._blogFeeds, 1).forEach(function(feed){
-      
-      setInterval(function(){this._setupRssWatch(feed)}.bind(this),3000);
+    _.first(this._blogFeeds, this._blogFeeds.length).forEach(function(feed){
+      setInterval(function(){
+        this._setupRssWatch(feed);
+      }.bind(this),10000);
     }.bind(this))
 
     signalR.hub('dspHub', {
       broadcast: function() {
         var updateDiff = new Date() - lastUpdate;
-        lastUpdate = new Date();
+        
         console.log(updateDiff);
-        if (updateDiff > 9999) {
+        if (updateDiff > 10000) {
+          lastUpdate = new Date();
           this.clients.all.invoke('updateBlogPosts').withArgs([server.blogInfo]);
         } else {
           this.clients.all.invoke('idle').withArgs(['idle']);
@@ -126,7 +132,6 @@ module.exports = {
 			'http://blog.jhossa.net/feed/',
 			'http://blog.kars7e.io/feed.xml',
 			'http://blog.kokosa.net/syndication.axd',
-			'http://blog.kurpio.com/feed/',
 			'http://blog.lantkowiak.pl/index.php/feed/',
 			'http://blog.leszczynski.it/feed/',
 			'http://blog.rakaz.pl/feed/',
@@ -175,7 +180,6 @@ module.exports = {
 			'http://jakubskoczen.pl/feed/',
 			'http://jaroslawstadnicki.pl/feed/',
 			'http://jsdn.pl/feed/',
-			'http://justmypassions.pl/?feed=rss2',
 			'http://kduszynski.pl/feed/',
 			'http://kkustra.blogspot.com/feeds/posts/default',
 			'http://kodikable.pl/rss/',
@@ -187,7 +191,6 @@ module.exports = {
 			'http://krzyskowk.postach.io/feed.xml',
 			'http://krzysztofabramowicz.com/feed/',
 			'http://krzysztofzawistowski.azurewebsites.net/?feed=rss2',
-			'http://kubasz.esy.es/feed/',
 			'http://langusblog.pl/index.php/feed/',
 			'http://lazybitch.com/feed',
 			'http://lion.net.pl/blog/feed.xml',
@@ -237,7 +240,6 @@ module.exports = {
 			'http://przemek.ciacka.com/feed.xml',
 			'http://pumiko.pl/feed.xml',
 			'http://resumees.net/devblog/feed/',
-			'http://rutkowski.in/feed/',
 			'http://rzeczybezinternetu.blogspot.com/feeds/posts/default',
 			'http://sebcza.pl/feed/',
 			'http://spine.angrybits.pl/?feed=rss2',
@@ -271,7 +273,6 @@ module.exports = {
 			'http://www.marcinwojdak.pl/?feed=rss2',
 			'http://www.md-techblog.net.pl/feed/',
 			'http://www.mguzdek.pl/feed/',
-			'http://www.mikolajdemkow.pl/feed/',
 			'http://www.namekdev.net/feed/',
 			'http://www.owsiak.org/?feed=rss2',
 			'http://www.przemyslawowsianik.net/feed/',

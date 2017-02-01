@@ -3,6 +3,9 @@ import _ from 'underscore'
 import { ListGroupItem, Grid, Col, Button } from 'react-bootstrap';
 export default class BlogItem extends React.Component {
     _getTitle(posts) {
+        if (this.props.blog.details.posts.length === 0) {
+            return '';
+        }
         return _.last(_.sortBy(this.props.blog.details.posts, 'publishDate')).title;
     }
 

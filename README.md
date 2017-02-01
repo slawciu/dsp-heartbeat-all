@@ -1,3 +1,9 @@
+# dsp-heartbeat
+
+Shows status of all blogs in Get Noticed! contest (www.dajsiepoznac.pl)
+
+This app was created using Webpack-React-Heroku Boilerplate - awesome stuff!
+
 # Webpack-React-Heroku Boilerplate
 
 Heroku deployable boilerplate for React/Flux/Webpack apps.

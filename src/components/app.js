@@ -67,7 +67,6 @@ export default class App extends React.Component {
       } else if (!flipDateError && flapDateError) {
         return 1;
       } else {
-        console.log(flipDate + ' ' + flipDate.compareTo(flapDate) + ' ' + flapDate);
         return flipDate.compareTo(flapDate);	
       }
     })
