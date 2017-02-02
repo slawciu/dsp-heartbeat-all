@@ -8,7 +8,6 @@
   "license": "MIT",
   "scripts": {
     "build": "cross-env NODE_ENV=production webpack --config ./webpack.prod.config.js --progress --colors",
-    "heroku-postbuild": "webpack -p --config ./webpack.prod.config.js --progress",
     "start": "node app.js"
   },
   "repository": {
