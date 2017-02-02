@@ -37,10 +37,7 @@ module.exports = {
 
       feedParser.on('end', function(err){
         if (err){
-          console.log('Error was passed to feedparser end event');
-          console.log('----------');
           console.log(err);
-          console.log('----------');
         }
       });
 
