@@ -28,7 +28,8 @@ module.exports = {
           }
           else {
             stream.pipe(feedParser);
-          }  
+          } 
+          res.end();
         } catch (error) {
           console.error(error);
         }
