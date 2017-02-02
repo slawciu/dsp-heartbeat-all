@@ -124,7 +124,6 @@ module.exports = {
     return app
   },
   _blogFeeds: [
-      'http://testowy-blog-like.blogspot.com/feeds/posts/default',
 			'http://0x00antdot.blogspot.com/feeds/posts/default',
 			'http://adambac.com/feed.xml',
 			'http://addictedtocreating.pl/feed/',
