@@ -28,15 +28,25 @@ module.exports = {
           }
           else {
             stream.pipe(feedParser);
-          }  
+          } 
         } catch (error) {
           console.error(error);
         }
       });
       blog.end();
-      feedParser.on('error', function (error) {
-        console.error(error)
-      });               
+
+      feedParser.on('end', function(err){
+        if (err){
+          console.log('Error was passed to feedparser end event');
+          console.log('----------');
+          console.log(err);
+          console.log('----------');
+        }
+      });
+
+      feedParser.on('error', function(error) {
+        this.emit('end', error);
+      });           
 
       feedParser.on('readable', function () {
         // This is where the action is!
