@@ -64,11 +64,18 @@ module.exports = {
               title: blogTitle,
               feedUrl: feedUrl,
               posts: [],
-              lastPostDate: new Date(0)
+              lastPostDate: new Date(0),
+              dspPosts: 0
             }
             console.log(linkToBlog+ ': '+ blogTitle);
           }
           if (item.pubDate > server.blogInfo[linkToBlog].lastPostDate) {
+            var isDspPost = item.categories.filter(function (category){
+			                        return category.toLowerCase().search('ozna') > -1;
+		                        }).length > 0;
+            if (isDspPost) {
+              server.blogInfo[linkToBlog].dspPosts++;
+            }
             server.blogInfo[linkToBlog].lastPostDate = item.pubDate;
             server.blogInfo[linkToBlog].posts.push({link: item.link, publishDate: item.date, categories: item.categories, title: item.title});
           }

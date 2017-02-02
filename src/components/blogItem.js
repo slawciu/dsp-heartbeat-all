@@ -10,19 +10,7 @@ export default class BlogItem extends React.Component {
     }
 
     _getDajSiePoznacItems() {
-        var count = 0;
-
-        this.props.blog.details.posts.forEach(function(post){
-            var dajSiePoznac = false;
-            post.categories.forEach(function(category){
-                if (category.search('ozna')) {
-                    dajSiePoznac = true;
-                }
-            });
-            count++;
-        });
-
-        return count;
+        return this.props.blog.details.dspPosts;
     }
 
     render (){
