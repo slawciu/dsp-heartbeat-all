@@ -59,19 +59,23 @@ module.exports = {
             }
             console.log(linkToBlog+ ': '+ blogTitle);
           }
-          if (item.pubDate > server.blogInfo[linkToBlog].lastPostDate) {
+          var postOnList = server.blogInfo[linkToBlog].posts.filter(function(post){return post.link === item.link}).length > 0;
+
+          if (!postOnList) {
             var isDspPost = item.categories.filter(function (category){
 			                        return category.toLowerCase().search('ozna') > -1;
 		                        }).length > 0;
             if (isDspPost) {
               server.blogInfo[linkToBlog].dspPosts++;
             }
-            server.blogInfo[linkToBlog].lastPostDate = item.pubDate;
             server.blogInfo[linkToBlog].posts.push({link: item.link, publishDate: item.date, categories: item.categories, title: item.title});
+          }
+
+          if (item.pubDate > server.blogInfo[linkToBlog].lastPostDate) {
+            server.blogInfo[linkToBlog].lastPostDate = item.pubDate;
           }
         }
       });
-
   },
 
   app: function () {
