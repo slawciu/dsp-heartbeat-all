@@ -15,26 +15,12 @@ module.exports = {
       var server = this;
       var feedParser = new FeedParser();
       try {
-        var blog = request(feed)
-        blog.setMaxListeners(400);
-        // Some feeds do not respond without user-agent and accept headers.
-        blog.setHeader('user-agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36');
-        blog.setHeader('accept', 'text/html,application/xhtml+xml');
-        
-        blog.on('response', function (res) {
-          var stream = this; // `this` is `req`, which is a stream
-          try {
-            if (res.statusCode !== 200) {
-              console.warn(this.href);
-            }
-            else {
-              stream.pipe(feedParser);
-            } 
-          } catch (error) {
-            console.error(error);
-          }
-        });
-        blog.end();
+        request
+          .get(feed)
+          .on('error', function(err){
+            console.log(err)
+          })
+          .pipe(feedParser);
       } catch (error) {
         console.log('Ups...:' + error)
       }
